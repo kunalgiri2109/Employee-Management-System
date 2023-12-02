@@ -24,7 +24,7 @@ router.put('/:employeeId', authenticateUser, async (req, res) => {
     }
     try {
       if( req.user.username.email !== ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM) {
-        return res.status(401).json({ 'Authorization Error ': ' You are not Admin' });
+        return res.status(401).json({ ' Authorization Error ': ' You are not Admin' });
       }
       const existingEmployee = await db('employees').where('id', employeeId).first();
   

@@ -25,26 +25,33 @@ router.post('/', async (req, res) => {
         errorLog.push(errors);
         return res.status(400).json( {errorLog});
       }
-      const existingUser = await db('employees').where('email', req.body.email.toLowerCase());
+      const firstname = req.body.firstName;
+      const lowercaseFirstName = firstname ? firstname.toLowerCase() : null;
+      const lastname = req.body.lastName;
+      const lowercaseLastName = lastname ? lastname.toLowerCase() : null;
+      const email = req.body.email;
+      const lowercaseEmail = email ? email.toLowerCase() : null;
+      
+      const existingUser = await db('employees').where('email', lowercaseEmail);
       if (existingUser.length > 0) {
         return res.status(400).json({ " Validation Error " : 'Employee already registered with this email' });
       }
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
       
       const newUser = await db('employees').insert({
-              first_name: req.body.firstName.toLowerCase(),
-              last_name: req.body.lastName.toLowerCase(),
-              fullname : req.body.fullname.toLowerCase(),
+              first_name: lowercaseFirstName,
+              last_name: lowercaseLastName,
+              fullname : lowercaseFirstName + " " + lowercaseLastName,
               password: hashedPassword,
               date_of_joining: req.body.dateOfJoining,
               address : req.body.address,
-              email : req.body.email.toLowerCase(),
+              email : lowercaseEmail,
               is_permanent: !!req.body.isPermanent,
               department_name: req.body.department,
             });
             const userDetails = {
-              "fullname": req.body.fullname.toLowerCase(),
-              "email" : req.body.email.toLowerCase(),
+              "fullname": lowercaseFirstName + " " + lowercaseLastName,
+              "email" : lowercaseEmail,
               "date of joining" : req.body.dateOfJoining,
               "address" : req.body.address,
               "isPermanent": !! req.body.isPermanent,

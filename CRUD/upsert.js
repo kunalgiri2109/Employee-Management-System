@@ -27,7 +27,6 @@ router.post('/', async (req, res) => {
       errorLog.push({ error: missingFields });
     }
     const validationError = validations(req.body);
-    console.log('errors :', validationError)
 
     if(Object.keys(validationError).length !== 0) {
       errorLog.push(validationError);
@@ -36,7 +35,7 @@ router.post('/', async (req, res) => {
   console.log(typeof employeeId);
   const existingUser = await db('employees').where('email', email);
   if (existingUser.length > 0) {
-      return res.status(400).json({ error: 'Employee already registered with this email' });
+      return res.status(400).json({ " Updation Error " : 'Employee already registered with this email' });
     
   }
   try {
@@ -59,7 +58,7 @@ router.post('/', async (req, res) => {
         const user = {
           firstName: req.body.firstName,
           lastName: req.body.lastName,
-          username: req.body.username,
+          fullname: req.body.fullname,
           dateOfJoining: req.body.dateOfJoining,
           address: req.body.address,
           email: req.body.email,
@@ -87,7 +86,7 @@ router.post('/', async (req, res) => {
         const user = {
           firstName: req.body.firstName,
           lastName: req.body.lastName,
-          username: req.body.username,
+          fullname: req.body.fullname,
           dateOfJoining: req.body.dateOfJoining,
           address: req.body.address,
           email: req.body.email,
@@ -98,7 +97,7 @@ router.post('/', async (req, res) => {
         };
         const token = generateAccessToken(user);
         password = undefined
-        username = (firstName + lastName).toLowerCase();
+        fullname = (firstName + lastName).toLowerCase();
         res.status(200).json({ "Success message": 'Inserted successfully', token, user });
       
     }

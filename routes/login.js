@@ -46,13 +46,13 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ "Validation message " : 'Invalid password' });
     }
     const userDetails = {
-      "fullname": req.body.fullname.toLowerCase(),
-      "email" : req.body.email.toLowerCase(),
-      "date of joining" : req.body.dateOfJoining,
-      "address" : req.body.address,
-      "email" : req.body.email,
-      "isPermanent": !! req.body.isPermanent,
-      "department": req.body.department,
+      "id" : user.id,
+      "fullname": user.fullname.toLowerCase(),
+      "email" : user.email.toLowerCase(),
+      "date of joining" : user.dateOfJoining,
+      "address" : user.address,
+      "isPermanent": !! user.isPermanent,
+      "department": user.department,
       "created_at" : getFormattedDateTime(),
       "updated_at" : getFormattedDateTime()
     }

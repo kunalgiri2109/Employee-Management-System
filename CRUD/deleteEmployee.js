@@ -14,19 +14,19 @@ const { ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM } = require('../authenticationMiddlewar
 router.delete('/:employeeId', authenticateUser, async (req, res) => {
     const employeeId = parseInt(req.params.employeeId, 10);
     if (isNaN(employeeId) || employeeId > Number.MAX_SAFE_INTEGER) {
-      return res.status(400).json({ "Validation Message " : 'Invalid user ID' });
+      return res.status(400).json({ " Validation Message " : 'Invalid user ID' });
     }
     try {
       const employee = await db('employees').where({ id: employeeId }).first();
       if (!employee) {
         return res.status(404).json({ error: 'Employee not found' });
       }
-      if(req.user.username.email === ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM || employee.email === req.user.username.email) {
+      if(req.user.username.email === ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM) {
         await db('employees').where('id', employeeId).del();
-        res.status(200).json({ "Success message " : 'Employee deleted successfully' });
+        res.status(200).json({ " Success message " : 'Employee deleted successfully' });
       }
       else {
-        return res.status(401).json({ 'Authorization Error ': ' You are not authorized' });
+        return res.status(401).json({ ' Authorization Error ': ' You are not authorized' });
       }
     } catch (error) {
       console.error('Error deleting employee : ', error);

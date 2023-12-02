@@ -10,6 +10,7 @@ function checkFields(userDetails) {
     missingFields = [];
 
     if (!userDetails.firstName) missingFields.push('firstName');
+    if (!userDetails.lastName) missingFields.push('lastName');
     if (!userDetails.fullname) missingFields.push('fullname');
     if (!userDetails.password) missingFields.push('password');
     if (!userDetails.confirmPassword) missingFields.push('confirmPassword');
