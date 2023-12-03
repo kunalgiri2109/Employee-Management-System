@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
     }
   }
   if (queryParams.email ) {
-    const [operator, value] = queryParams.email.split(':');
+    const [operator, value] = queryParams.email.toLowerCase().split(':');
     if(!isValidEmail(value)) {
       return res.status(400).json({ "Validation Error " : 'Invalid value for email parameter' });
     }
@@ -33,8 +33,9 @@ router.get('/', async (req, res) => {
     }
   }
   if(queryParams.isPermanent) {
-    const [operator, value] = queryParams.isPermanent.split(':');
-     if(typeof value === 'boolean') {
+    const [operator, value] = queryParams.isPermanent.toLowerCase().split(':');
+    console.log(value + " " +  value)
+     if( value != 'true' && value != 'false') {
       return res.status(400).json({  "Validation Error " : 'Invalid value for is_permanent parameter' });
     }
   }
@@ -55,11 +56,11 @@ router.get('/', async (req, res) => {
       employeeFilter.department_name = { operator, value };
     }
     if (queryParams.email) {
-      const [operator, value] = queryParams.email.split(':');
+      const [operator, value] = queryParams.email.toLowerCase().split(':');
       employeeFilter.email = { operator, value };
     }
     if (queryParams.isPermanent) {
-      const [operator, value] = queryParams.isPermanent.split(':');
+      const [operator, value] = queryParams.isPermanent.toLowerCase().split(':');
       employeeFilter.is_permanent = { operator, value };
     }
     const employees = await db('employees')

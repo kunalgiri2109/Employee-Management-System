@@ -24,7 +24,7 @@ router.post('/', async (req, res) => {
     let missingFields = [];
     missingFields = checkFields(req.body);
     if(missingFields.length > 0) {
-      errorLog.push({ error: missingFields });
+      errorLog.push({ "Missing Fields " : missingFields });
     }
     const validationError = validations(req.body);
 

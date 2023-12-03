@@ -14,12 +14,12 @@ const { ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM } = require('../authenticationMiddlewar
 router.delete('/:employeeId', authenticateUser, async (req, res) => {
     const employeeId = parseInt(req.params.employeeId, 10);
     if (isNaN(employeeId) || employeeId > Number.MAX_SAFE_INTEGER) {
-      return res.status(400).json({ " Validation Message " : 'Invalid user ID' });
+      return res.status(400).json({ " Validation Error " : 'Invalid Employee ID' });
     }
     try {
       const employee = await db('employees').where({ id: employeeId }).first();
       if (!employee) {
-        return res.status(404).json({ error: 'Employee not found' });
+        return res.status(404).json({ "Invalid Id " : 'Employee not found' });
       }
       if(req.user.username.email === ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM) {
         await db('employees').where('id', employeeId).del();
