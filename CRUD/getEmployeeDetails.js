@@ -1,23 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const knex = require('knex');
+const elastic = require('../elasticSearch');
 const db = knex(require('../db/knexfile').development);
 
 const { authenticateUser } = require('../authenticationMiddleware/authentication');
 const { ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM } = require('../authenticationMiddleware/authAdmin');
 
 router.get('/:employeeId', authenticateUser, async (req, res) => {
-
-  const employeeId = parseInt(req.params.employeeId, 10);
-  if(!Number.isSafeInteger(employeeId)) {
-      return res.status(400).json({ "Validtaion Error ": 'Invalid employee ID' });
-  }
-  
-  if (isNaN(employeeId)) {
-    return res.status(400).json({ "Validation Error ": 'Invalid employee ID' });
-  }
   try {
-    const employee = await db('employees').where( 'id', employeeId).first();
+    const employeeId = parseInt(req.params.employeeId, 10);
+    if(!Number.isSafeInteger(employeeId)) {
+        return res.status(400).json({ "Validtaion Error ": 'Invalid employee ID' });
+    }
+    
+    if (isNaN(employeeId)) {
+      return res.status(400).json({ "Validation Error ": 'Invalid employee ID' });
+    }
+  
+    const employee = await elastic.get({
+      index: 'employees',
+      id: employeeId,
+    });
+    const employeeData = employee.body._source;
+  console.log('Employee Data:', employeeData);
+    // console.log(employee.error.found)
+    // const employee = await db('employees').where( 'id', employeeId).first();
     if(!employee) {
       return res.status(404).json({ " Fetching Error ": ' No user found ' });
     }
@@ -30,10 +38,9 @@ router.get('/:employeeId', authenticateUser, async (req, res) => {
     }
   } 
   catch (error) {
-    console.error('Error fetching employee details:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    // console.error('Error fetching employee details:', error);
+    res.status(500).json({ error });
   }
 });
   
-
-  module.exports = router;
+module.exports = router;

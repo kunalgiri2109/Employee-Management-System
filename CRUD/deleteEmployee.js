@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const path = require('path');
 const knex = require('knex');
 const config = require('../db/knexfile');
+const elastic = require('../elasticSearch');
 const jwt = require('jsonwebtoken');
 const db = knex(require('../db/knexfile').development);
 const { authenticateUser } = require('../authenticationMiddleware/authentication');
@@ -17,18 +18,32 @@ router.delete('/:employeeId', authenticateUser, async (req, res) => {
       return res.status(400).json({ " Validation Error " : 'Invalid Employee ID' });
     }
     try {
+
       const employee = await db('employees').where({ id: employeeId }).first();
+      console.log(employee);
+      const deletedCount = await db('employees').where('id', employeeId).del();
+      if (deletedCount > 0) {
+        res.status(200).json({message : 'Employee deleted successfully'});
+        const response = await elastic.delete({
+          index: "employees",
+          id: req.params.employeeId,
+        });
+      } 
+      else {
+        res.status(404).json({ message: 'Employee not found' });
+      }
       if (!employee) {
         return res.status(404).json({ "Invalid Id " : 'Employee not found' });
       }
-      if(req.user.username.email === ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM) {
-        await db('employees').where('id', employeeId).del();
-        res.status(200).json({ " Success message " : 'Employee deleted successfully' });
-      }
-      else {
-        return res.status(401).json({ ' Authorization Error ': ' You are not authorized' });
-      }
-    } catch (error) {
+      // if(req.user.username.email === ADMIN_EMPLOYEE_MANAGEMENT_SYSTEM) {
+      //   await db('employees').where('id', employeeId).del();
+      //   res.status(200).json({ " Success message " : 'Employee deleted successfully' });
+      // }
+      // else {
+      //   return res.status(401).json({ ' Authorization Error ': ' You are not authorized' });
+      // }
+    } 
+    catch (error) {
       console.error('Error deleting employee : ', error);
       res.status(500).json({ message: 'Internal Server Error' });
     }

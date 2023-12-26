@@ -5,12 +5,12 @@ const knex = require('knex');
 const path = require('path');
 const router = express.Router();
 const PORT = process.env.PORT || 8080;
-
+const elastic = require('./elasticSearch');
 const app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-require('dotenv').config()
+require('dotenv').config();
 
 const loginRoutes = require('./routes/login');
 const registerRoutes = require('./routes/register');
@@ -20,6 +20,9 @@ const deleteEmployee = require('./CRUD/deleteEmployee');
 const upsert = require('./CRUD/upsert');
 const updateEmployee = require('./CRUD/updateEmployee');
 const queryParams = require('./queryParams/queryParams');
+const queryDSL = require('./queryParams/queryDSL');
+const officeLocation = require('./officeLocation');
+
 app.use(router);
 
 app.use('/login', loginRoutes);
@@ -27,9 +30,12 @@ app.use('/register', registerRoutes);
 app.use('/getEmployee', getEmployee); 
 app.use('/getAllEmployees', getAllEmployees); 
 app.use('/upsert', upsert); 
+app.use('/officeLocation', officeLocation); 
 app.use('/deleteEmployee', deleteEmployee); 
 app.use('/updateEmployee', updateEmployee); 
-app.use('/employees', queryParams);
+app.use('/officeLocation', officeLocation); 
+// app.use('/employees', queryParams);
+app.use('/employees', queryDSL);
 
 const db = knex(require('./db/knexfile').development);
 

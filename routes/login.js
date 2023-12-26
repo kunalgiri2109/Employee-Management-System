@@ -2,11 +2,8 @@
 
 const express = require('express');
 const router = express.Router();
-const path = require('path');
 const knex = require('knex');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const app = express();
 
 const { generateAccessToken } = require('../authenticationMiddleware/authService');
 const { getFormattedDateTime } = require('../formatDateTime/getFormattedDateTime');
@@ -57,11 +54,7 @@ router.post('/', async (req, res) => {
       "updated_at" : getFormattedDateTime()
     }
     const token = generateAccessToken(userDetails);
-      res.status(200).json({ 
-        " Success Message ": 'Login successful',
-          "token" : token,
-          "User Details" : userDetails
-         });
+      res.status(200).json({ "token " : token, message : 'Login successful' });
     }
     catch (error) {
       console.error('Error during login:', error);

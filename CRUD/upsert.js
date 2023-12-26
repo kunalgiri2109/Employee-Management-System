@@ -1,114 +1,79 @@
-// const { bcrypt, db, router } = require('../common/commonFile');
+
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcrypt');
-const bodyParser = require('body-parser');
-const path = require('path');
 const knex = require('knex');
-const config = require('../db/knexfile');
-const jwt = require('jsonwebtoken');
+const elastic = require('../elasticSearch');
 const db = knex(require('../db/knexfile').development);
 
-const { validations } = require('../Validations_CheckFields/validations');
+const { validationsUpsert } = require('../validations_upsert');
 const { checkFields } = require('../Validations_CheckFields/checkFields');
-const { getFormattedDateTime } = require('../formatDateTime/getFormattedDateTime');
+// const { getFormattedDateTime } = require('../formatDateTime/getFormattedDateTime');
+// const { generateAccessToken } = require('../authenticationMiddleware/authService');
 
-const { generateAccessToken } = require('../authenticationMiddleware/authService');
-const { error } = require('console');
-
-router.post('/', async (req, res) => {
-    let {
-      employeeId, firstName, lastName, fullname, password, dateOfJoining, address, email, isPermanent, department,
-    } = req.body;
-    let errorLog = [];
-    let missingFields = [];
-    missingFields = checkFields(req.body);
-    if(missingFields.length > 0) {
-      errorLog.push({ "Missing Fields " : missingFields });
-    }
-    const validationError = validations(req.body);
-
-    if(Object.keys(validationError).length !== 0) {
-      errorLog.push(validationError);
-      return res.status(400).json( {errorLog});
-    }
-  console.log(typeof employeeId);
-  const existingUser = await db('employees').where('email', email);
-  if (existingUser.length > 0) {
-      return res.status(400).json({ " Updation Error " : 'Employee already registered with this email' });
-    
-  }
+router.put('/', async (req, res) => {
   try {
-    
-    const hashedPassword = await bcrypt.hash(password, 10);
-    await db.transaction(async (trx) => {
-      if(employeeId !== undefined) {
-        
-        await db('employees').where('id', employeeId).update({
-          first_name: firstName,
-          last_name: lastName,
-          fullname: fullname,
-          password: hashedPassword,
-          date_of_joining: dateOfJoining,
-          address: address,
-          email: email,
-          is_permanent: !!isPermanent,
-          department_name: department,
+    const employeeDetails = req.body;
+    let errorResponses = [], successResponses = [];
+    for(const employeeDetail of employeeDetails) {
+      // const validationError = validationsUpsert(employeeDetail);
+      // if(Object.keys(validationError).length !== 0) {
+      //   errorResponses.push(validationError);
+      //   continue;
+      // }
+      if('id' in employeeDetail) {
+        const department = await db('departments').where('deptName', employeeDetail.department).first();
+        employeeDetail.deptId = department.deptId;
+        await db('employees').where('id', employeeDetail.id).update( employeeDetail );
+        await elastic.update({
+          index: 'employees',
+          id: employeeDetail.id,
+          body : {
+            doc : employeeDetail
+          }
         });
-        const user = {
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          fullname: req.body.fullname,
-          dateOfJoining: req.body.dateOfJoining,
-          address: req.body.address,
-          email: req.body.email,
-          isPermanent: req.body.isPermanent,
-          department: req.body.department,
-          "created_at" : getFormattedDateTime(),
-          "updated_at" : getFormattedDateTime()
-        };
-        res.status(200).json({ "Success message": 'Upsert successful.', user});
+          successResponses.push({ employeeDetail });
       }
-      
       else {
-        console.log("entering insert block");
-        await db('employees').insert({
-          first_name: firstName,
-          last_name: lastName,
-          fullname: fullname,
-          password: hashedPassword,
-          date_of_joining: dateOfJoining,
-          address: address,
-          email: email,
-          is_permanent: !!isPermanent,
-          department_name: department,
-        });
-        const user = {
-          firstName: req.body.firstName,
-          lastName: req.body.lastName,
-          fullname: req.body.fullname,
-          dateOfJoining: req.body.dateOfJoining,
-          address: req.body.address,
-          email: req.body.email,
-          isPermanent: req.body.isPermanent,
-          department: req.body.department,
-          "created_at" : getFormattedDateTime(),
-          "updated_at" : getFormattedDateTime()
-        };
-        const token = generateAccessToken(user);
-        password = undefined
-        fullname = (firstName + lastName).toLowerCase();
-        res.status(200).json({ "Success message": 'Inserted successfully', token, user });
-      
+        const lowercaseEmail = employeeDetail.email.toLowerCase();
+        const existingUser = await db('employees').where('email', lowercaseEmail);
+        if (existingUser.length > 0) {
+            errorResponses.push('Employee already registered with this email' );
+        }
+        else {
+          // let missingFields = [];
+          // missingFields = checkFields(employeeDetail);
+          // if(missingFields.length > 0) {
+          //   errorResponses.push({ "Missing Fields " : missingFields });
+          //   continue;
+          // }
+          const hashedPassword = await bcrypt.hash(employeeDetail.password, 10);
+          const department = await db('departments').where('deptName', employeeDetail.department).first();
+          
+          employeeDetail.password = hashedPassword;
+          employeeDetail.deptId = department.deptId;
+          const [employeeId] = await db('employees').insert( employeeDetail ).returning('id');
+         
+          employeeDetail.password = undefined;
+          const body = await elastic.index({
+            index: 'employees',
+            id : employeeId.id,
+            body: {id : employeeId.id, ...employeeDetail
+            },
+          });
+          employeeDetail.password = undefined;
+          successResponses.push({ employeeDetail });
+        }
+      }
     }
-    await trx.commit();
-    });
+    const response = { errorResponses, successResponses };
+    return res.status(200).json(response);
   }
   catch (error) {
     console.error('Error during upsert:', error);
     res.status(500).send('Internal Server Error');
   }
+  
 });
-
 
 module.exports = router;

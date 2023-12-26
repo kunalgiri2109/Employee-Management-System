@@ -7,6 +7,7 @@ const path = require('path');
 const knex = require('knex');
 const config = require('../db/knexfile');
 const jwt = require('jsonwebtoken');
+const elastic = require('../elasticSearch');
 const db = knex(require('../db/knexfile').development);
 const { validations } = require('../Validations_CheckFields/validations');
 const { checkFields } = require('../Validations_CheckFields/checkFields');
@@ -31,38 +32,38 @@ router.put('/:employeeId', authenticateUser, async (req, res) => {
       if (!existingEmployee) {
         return res.status(404).json({ message: 'Employee not found' });
       }
-      let errorLog = [];
-      let missingFields = [];
-      missingFields = checkFields(req.body);
+      // let errorLog = [];
+      // let missingFields = [];
+    //   missingFields = checkFields(req.body);
      
-     if (missingFields.length > 0) {
-        errorLog.push({ "Missing Fields " : missingFields });
-      }
-      const errors = validations(req.body);
-      if(Object.keys(errors).length !== 0 || missingFields.length > 0) {
-        errorLog.push(errors);
-        return res.status(400).json( {errorLog});
-      }
+    //  if (missingFields.length > 0) {
+    //     errorLog.push({ "Missing Fields " : missingFields });
+      // }
+      // const errors = validations(req.body);
+      // if(Object.keys(errors).length !== 0 || missingFields.length > 0) {
+      //   errorLog.push(errors);
+      //   return res.status(400).json( {errorLog});
+      // }
       const existingUser = await db('employees').where('email', req.body.email.toLowerCase());
       if (existingUser.length > 0) {
         return res.status(400).json({ " Validation Error " : 'Employee already registered with this email' });
       }
 
-      const hashedPassword = await bcrypt.hash(updatedDetails.password, 10);
       
-      await db('employees').where('id', employeeId).update({
-        first_name: updatedDetails.firstName,
-        last_name: updatedDetails.lastName,
-        fullname: updatedDetails.fullname,
-        password: hashedPassword,
-        date_of_joining: updatedDetails.dateOfJoining,
-        address: updatedDetails.address,
-        email: updatedDetails.email,
-        is_permanent: !!updatedDetails.isPermanent,
-        department_name: updatedDetails.department,});
+      await db('employees').where('id', employeeId).update(updatedDetails);
 
       const updatedEmployee = await db('employees').where('id', employeeId).first();
       const filteredEmployee = { ...updatedEmployee, password: undefined };
+      
+      console.log(updatedDetails);
+      await elastic.update({
+        index: 'employees',
+        id: employeeId,
+        body : {
+          doc : updatedDetails
+        }
+      });
+
       res.json({ "Success Message " : 'Employee details updated successfully',
                  "Updated Employee Details " : filteredEmployee 
         });
