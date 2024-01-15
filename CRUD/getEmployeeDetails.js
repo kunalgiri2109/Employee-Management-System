@@ -22,8 +22,10 @@ router.get('/:employeeId', authenticateUser, async (req, res) => {
       index: 'employees',
       id: employeeId,
     });
+
     const employeeData = employee.body._source;
-  console.log('Employee Data:', employeeData);
+    console.log('Employee Data:', employeeData);
+    
     // console.log(employee.error.found)
     // const employee = await db('employees').where( 'id', employeeId).first();
     if(!employee) {

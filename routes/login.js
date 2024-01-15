@@ -33,12 +33,13 @@ router.post('/', async (req, res) => {
     if(errorLog.length !== 0) {
       return res.status(400).json( {errorLog});
     }
-      const user = await db('employees').where('email', email.trim().toLowerCase()).first();
-      if (!user) {
-        return res.status(404).json({ " Validation Error" : 'No user found ' });
-      }
-      const passwordMatch = await bcrypt.compare(password, user.password);
-      
+    
+    const user = await db('employees').where('email', email.trim().toLowerCase()).first();
+    if (!user) {
+      return res.status(404).json({ " Validation Error" : 'No user found ' });
+    }
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    
     if (!passwordMatch) {
       return res.status(401).json({ "Validation message " : 'Invalid password' });
     }

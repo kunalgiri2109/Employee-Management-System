@@ -26,43 +26,49 @@ router.post('/', async (req, res) => {
       }
       const email = req.body.email;
       const lowercaseEmail = email ? email.toLowerCase() : null;
-      
+    
       const existingUser = await db('employees').where('email', lowercaseEmail);
       if (existingUser.length > 0) {
         return res.status(400).json({ error : 'Employee already registered with this email' });
       }
+
       const passwordToHash = req.body.password;
 
-    if (!passwordToHash) {
-      return res.status(400).json({ error: 'Password is required' });
-    }
-    const hashedPassword = await bcrypt.hash(passwordToHash, 10);
-    const departmentDetails = await db('departments').where('deptName', req.body.department).first();
-    const address = req.body.address;
-    const cacheKey = 'registration:' + JSON.stringify(address);
-    const cachedResult = await redisClient.get(cacheKey);
-    let coordinates, geoJsonPoint;
-    if (cachedResult) {
-      coordinates = JSON.parse(cachedResult);
-      // console.log(coordinates);
-    }
-    else {
-      apiKey = "7f1270307aea4177a5b52a78a0bacac6";
+      if (!passwordToHash) {
+        return res.status(400).json({ error: 'Password is required' });
+      }
+      const hashedPassword = await bcrypt.hash(passwordToHash, 10);
+      const departmentDetails = await db('departments').where('deptName', req.body.department).first();
+      const address = req.body.address;
+      const cacheKey = 'registration:' + JSON.stringify(address);
+      // console.log(cacheKey);
     
-      let addr = '';
-      for (const key in address) {
-        addr += address[key] + ", ";
+      const cachedResult = await redisClient.hget('coordinates', cacheKey);
+      // console.log(cachedResult);
+
+      let coordinates, geoJsonPoint;
+      if (cachedResult) {
+        coordinates = JSON.parse(cachedResult);
       }
-        coordinates = await geocodeAddress(apiKey, addr);
-        
-        await redisClient.set(cacheKey, JSON.stringify(coordinates));
-      }
-      geoJsonPoint = {
-        type: 'Point',
-        coordinates: [ coordinates.longitude, coordinates.latitude ],
-      };
-      // console.log(geoJsonPoint);
-      const [newUser] = await db('employees').insert({
+      else {
+        apiKey = "7f1270307aea4177a5b52a78a0bacac6";
+      
+        let addr = '';
+        // console.log(address);
+        for (const key in address) {
+          addr += address[key] + ", ";
+        }
+          coordinates = await geocodeAddress(apiKey, addr);
+          // console.log(cacheKey);
+          await redisClient.hset('coordinates', cacheKey, JSON.stringify(coordinates));
+          // await redisClient.set(cacheKey, JSON.stringify(coordinates));
+        }
+        geoJsonPoint = {
+          type: 'Point',
+          coordinates: [ coordinates.longitude, coordinates.latitude ],
+        };
+        // console.log(geoJsonPoint);
+        const [newUser] = await db('employees').insert({
           fullname: req.body.fullname,
           email : lowercaseEmail,
           password: hashedPassword,
@@ -95,7 +101,7 @@ router.post('/', async (req, res) => {
           body: {id : newUser.id, ...userDetails
           },
         });
-        res.status(200).json({ "token" : token, userDetails });
+        res.status(200).json({ "token" : token });
     }
     catch (error) {
       res.status(500).json({ error: error});
