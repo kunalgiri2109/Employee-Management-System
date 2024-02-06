@@ -35,7 +35,7 @@ function validationsUpsert(userDetails) {
         
     }
     if('skills' in userDetails) {
-         
+         //
     }
     if('email' in userDetails) {
         
